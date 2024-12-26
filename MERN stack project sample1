@@ -1,0 +1,154 @@
+MERN stack project:
+
+### Prerequisites
+1. **Node.js** and **npm** installed on your machine.
+2. **MySQL** installed and running.
+3. **Create a MySQL database** (e.g., `your_database`).
+
+### Step-by-Step Guide
+
+#### 1. Set Up the Backend
+
+1. **Create a new directory for your project** and navigate into it:
+   ```bash
+   mkdir mern-project
+   cd mern-project
+   ```
+
+2. **Initialize a new Node.js project**:
+   ```bash
+   npm init -y
+   ```
+
+3. **Install necessary dependencies**:
+   ```bash
+   npm install express mysql bcrypt jsonwebtoken
+   ```
+
+4. **Create `server.js`** and add the backend code:
+   ```javascript
+   const express = require('express');
+   const mysql = require('mysql');
+   const bcrypt = require('bcrypt');
+   const jwt = require('jsonwebtoken');
+
+   const app = express();
+   app.use(express.json());
+
+   const db = mysql.createConnection({
+     host: 'localhost',
+     user: 'root',
+     password: '',
+     database: 'your_database'
+   });
+
+   db.connect((err) => {
+     if (err) throw err;
+     console.log('Connected to database');
+   });
+
+   app.post('/api/register', async (req, res) => {
+     const { firstName, lastName, mobileNumber, password } = req.body;
+     const hashedPassword = await bcrypt.hash(password, 10);
+     const sql = 'CALL CreateUser(?, ?, ?, ?, ?)';
+     db.query(sql, [firstName, lastName, mobileNumber, hashedPassword, 'system'], (err, result) => {
+       if (err) throw err;
+       res.send('User registered');
+     });
+   });
+
+   app.post('/api/login', (req, res) => {
+     const { mobileNumber, password } = req.body;
+     const sql = 'SELECT * FROM users WHERE mobile_number = ?';
+     db.query(sql, [mobileNumber], async (err, result) => {
+       if (err) throw err;
+       if (result.length > 0) {
+         const user = result[0];
+         const match = await bcrypt.compare(password, user.password);
+         if (match) {
+           const token = jwt.sign({ id: user.id }, 'secret_key', { expiresIn: '1h' });
+           res.json({ token });
+         } else {
+           res.status(401).send('Invalid credentials');
+         }
+       } else {
+         res.status(404).send('User not found');
+       }
+     });
+   });
+
+   app.listen(5000, () => {
+     console.log('Server running on port 5000');
+   });
+   ```
+
+5. **Run the backend server**:
+   ```bash
+   node server.js
+   ```
+
+#### 2. Set Up the Frontend
+
+1. **Create a new React app**:
+   ```bash
+   npx create-react-app client
+   cd client
+   ```
+
+2. **Install Axios** for making HTTP requests:
+   ```bash
+   npm install axios
+   ```
+
+3. **Create the `RegistrationPage.js` and `LoginPage.js` components** in the `src` directory with the provided code.
+
+4. **Update `src/App.js`** to include the new components:
+   ```jsx
+   import React from 'react';
+   import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+   import RegistrationPage from './RegistrationPage';
+   import LoginPage from './LoginPage';
+   import LandingPage from './LandingPage';
+
+   function App() {
+     return (
+       <Router>
+         <Switch>
+           <Route path="/register" component={RegistrationPage} />
+           <Route path="/login" component={LoginPage} />
+           <Route path="/landing" component={LandingPage} />
+         </Switch>
+       </Router>
+     );
+   }
+
+   export default App;
+   ```
+
+5. **Run the React app**:
+   ```bash
+   npm start
+   ```
+
+#### 3. Database Setup
+
+1. **Create the MySQL table** and stored procedures using the provided SQL scripts.
+
+2. **Ensure your MySQL server is running** and the database is properly configured.
+
+### Running the Project
+
+1. **Start the backend server**:
+   ```bash
+   node server.js
+   ```
+
+2. **Start the React frontend**:
+   ```bash
+   cd client
+   npm start
+   ```
+
+3. **Access the application** in your browser at `http://localhost:3000`.
+
+You should now be able to register, log in, and see the personalized greeting on the landing page. Let me know if you encounter any issues or need further assistance!
